@@ -1,51 +1,560 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Conversor de Bases</title>
-  <link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Recomendação</title>
+    <style>
+        :root {
+            --primary: #4361ee;
+            --secondary: #3f37c9;
+            --light: #f8f9fa;
+            --dark: #212529;
+            --success: #4cc9f0;
+            --danger: #f72585;
+            --border-radius: 8px;
+            --box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            background-color: #f5f7fa;
+            color: var(--dark);
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+        }
+
+        h1, h2, h3 {
+            color: var(--primary);
+            margin-bottom: 15px;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .ratings-matrix {
+            margin: 30px 0;
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+
+        th, td {
+            padding: 12px 15px;
+            text-align: center;
+            border: 1px solid #ddd;
+        }
+
+        th {
+            background-color: var(--primary);
+            color: white;
+            font-weight: 500;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+
+        .rated {
+            background-color: rgba(76, 201, 240, 0.1);
+            font-weight: bold;
+        }
+
+        .missing {
+            background-color: rgba(247, 37, 133, 0.05);
+            color: #6c757d;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+
+        select, button {
+            padding: 10px 15px;
+            font-size: 16px;
+            border-radius: var(--border-radius);
+            border: 1px solid #ced4da;
+        }
+
+        button {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: 500;
+            transition: background-color 0.3s;
+            margin-top: 10px;
+        }
+
+        button:hover {
+            background-color: var(--secondary);
+        }
+
+        .results {
+            margin-top: 40px;
+            display: none;
+        }
+
+        .plot-container {
+            margin: 30px 0;
+            text-align: center;
+        }
+
+        #convergencePlot {
+            max-width: 100%;
+            height: auto;
+        }
+
+        .recommendations {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+
+        .recommendation-card {
+            background: white;
+            border-radius: var(--border-radius);
+            padding: 20px;
+            box-shadow: var(--box-shadow);
+            border: 1px solid #eee;
+        }
+
+        .recommendation-card h3 {
+            color: var(--secondary);
+            margin-bottom: 10px;
+        }
+
+        .stars {
+            color: #ffc107;
+            font-size: 20px;
+            margin: 10px 0;
+        }
+
+        .factors {
+            display: flex;
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .factor {
+            flex: 1;
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: var(--border-radius);
+            text-align: center;
+        }
+
+        .factor-value {
+            font-size: 18px;
+            font-weight: bold;
+            margin-top: 5px;
+        }
+
+        .back-btn {
+            display: inline-block;
+            margin-top: 20px;
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-radius: 50%;
+            border-top: 4px solid var(--primary);
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+            }
+            
+            .factors {
+                flex-direction: column;
+            }
+        }
+    </style>
 </head>
 <body>
-  <div class="container">
-    <h1>Conversor de Bases Numéricas</h1>
-    <div class="converter">
-      <input type="text" id="inputNumero" placeholder="Digite o número">
-      
-      <div class="selects">
-        <label for="baseOrigem">De:</label>
-        <select id="baseOrigem">
-          <option value="2">Binário</option>
-          <option value="8">Octal</option>
-          <option value="10" selected>Decimal</option>
-          <option value="16">Hexadecimal</option>
-        </select>
-
-        <label for="baseDestino">Para:</label>
-        <select id="baseDestino">
-          <option value="2" selected>Binário</option>
-          <option value="8">Octal</option>
-          <option value="10">Decimal</option>
-          <option value="16">Hexadecimal</option>
-        </select>
-      </div>
-
-      <button onclick="converter()">Converter</button>
-      <div id="resultado" class="resultado"></div>
+    <div class="container">
+        <div id="main-view">
+            <h1>Sistema de Recomendação de Filmes</h1>
+            
+            <h2>Matriz de Avaliações</h2>
+            <div class="ratings-matrix">
+                <table id="ratings-table">
+                    <!-- Preenchido pelo JavaScript -->
+                </table>
+            </div>
+            
+            <div class="form-group">
+                <h2>Obter Recomendações</h2>
+                <label for="user-select">Selecione um usuário:</label>
+                <select id="user-select">
+                    <!-- Preenchido pelo JavaScript -->
+                </select>
+                <button id="recommend-btn">Gerar Recomendações</button>
+            </div>
+        </div>
+        
+        <div id="loading" class="loading">
+            <div class="spinner"></div>
+            <p>Treinando o modelo...</p>
+        </div>
+        
+        <div id="results-view" class="results">
+            <h2 id="results-title">Recomendações para <span id="user-name"></span></h2>
+            
+            <div class="plot-container">
+                <h3>Convergência do Algoritmo</h3>
+                <canvas id="convergencePlot"></canvas>
+            </div>
+            
+            <div class="recommendations" id="recommendations-list">
+                <!-- Preenchido pelo JavaScript -->
+            </div>
+            
+            <div class="factors-info">
+                <h3>Fatores Latentes</h3>
+                <p>Vetor de fatores para <span id="factors-user-name"></span>:</p>
+                <div class="factors" id="factors-container">
+                    <!-- Preenchido pelo JavaScript -->
+                </div>
+                <p>Estes fatores representam características ocultas aprendidas pelo modelo.</p>
+            </div>
+            
+            <a href="#" class="back-btn" id="back-btn">← Voltar</a>
+        </div>
     </div>
 
-    <h2>Tabela Binário ↔ Hexadecimal (4 bits)</h2>
-    <table>
-      <thead>
-        <tr>
-          <th>Binário</th>
-          <th>Hexadecimal</th>
-        </tr>
-      </thead>
-      <tbody id="tabelaHex"></tbody>
-    </table>
-  </div>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // Dados iniciais
+        const R_true = [
+            [5, 3, 0, 1, 4],
+            [4, 0, 0, 1, 5],
+            [1, 1, 0, 5, 0],
+            [1, 0, 0, 4, 0],
+            [0, 1, 5, 4, 0]
+        ];
 
-  <script src="script.js"></script>
+        const items = ["Filme A", "Filme B", "Filme C", "Filme D", "Filme E"];
+        const users = ["João", "Maria", "Carlos", "Ana", "Pedro"];
+        const num_factors = 2;
+
+        // Inicializar a tabela de avaliações
+        function initRatingsTable() {
+            const table = document.getElementById('ratings-table');
+            
+            // Cabeçalho
+            let html = '<tr><th>Usuário/Item</th>';
+            items.forEach(item => {
+                html += `<th>${item}</th>`;
+            });
+            html += '</tr>';
+            
+            // Linhas de dados
+            users.forEach((user, i) => {
+                html += `<tr><td>${user}</td>`;
+                R_true[i].forEach(rating => {
+                    const cls = rating === 0 ? 'missing' : 'rated';
+                    const display = rating === 0 ? '-' : rating;
+                    html += `<td class="${cls}">${display}</td>`;
+                });
+                html += '</tr>';
+            });
+            
+            table.innerHTML = html;
+        }
+
+        // Inicializar o dropdown de usuários
+        function initUserSelect() {
+            const select = document.getElementById('user-select');
+            users.forEach((user, i) => {
+                const option = document.createElement('option');
+                option.value = i;
+                option.textContent = user;
+                select.appendChild(option);
+            });
+        }
+
+        // Função para treinar o modelo
+        function trainModel(R, num_factors, learning_rate = 0.01, reg_param = 0.1, epochs = 500) {
+            const num_users = R.length;
+            const num_items = R[0].length;
+            
+            // Criar máscara (1 para avaliações conhecidas, 0 para desconhecidas)
+            const M = R.map(row => row.map(val => val > 0 ? 1 : 0));
+            
+            // Inicializar matrizes U e V com valores aleatórios
+            let U = Array(num_users).fill().map(() => 
+                Array(num_factors).fill().map(() => Math.random() * (1/num_factors)));
+                
+            let V = Array(num_items).fill().map(() => 
+                Array(num_factors).fill().map(() => Math.random() * (1/num_factors)));
+            
+            const errors = [];
+            
+            for (let epoch = 0; epoch < epochs; epoch++) {
+                // Calcular previsões
+                const R_pred = Array(num_users).fill().map(() => Array(num_items).fill(0));
+                for (let i = 0; i < num_users; i++) {
+                    for (let j = 0; j < num_items; j++) {
+                        for (let k = 0; k < num_factors; k++) {
+                            R_pred[i][j] += U[i][k] * V[j][k];
+                        }
+                    }
+                }
+                
+                // Calcular erro apenas para avaliações conhecidas
+                let total_error = 0;
+                const error = Array(num_users).fill().map(() => Array(num_items).fill(0));
+                
+                for (let i = 0; i < num_users; i++) {
+                    for (let j = 0; j < num_items; j++) {
+                        error[i][j] = M[i][j] * (R[i][j] - R_pred[i][j]);
+                        total_error += error[i][j] ** 2;
+                    }
+                }
+                
+                const rmse = Math.sqrt(total_error / M.flat().reduce((a, b) => a + b, 0));
+                errors.push(rmse);
+                
+                // Calcular gradientes e atualizar parâmetros
+                // Gradiente para U
+                const U_grad = Array(num_users).fill().map(() => Array(num_factors).fill(0));
+                for (let i = 0; i < num_users; i++) {
+                    for (let k = 0; k < num_factors; k++) {
+                        let sum = 0;
+                        for (let j = 0; j < num_items; j++) {
+                            sum += error[i][j] * V[j][k];
+                        }
+                        U_grad[i][k] = -2 * sum + 2 * reg_param * U[i][k];
+                    }
+                }
+                
+                // Gradiente para V
+                const V_grad = Array(num_items).fill().map(() => Array(num_factors).fill(0));
+                for (let j = 0; j < num_items; j++) {
+                    for (let k = 0; k < num_factors; k++) {
+                        let sum = 0;
+                        for (let i = 0; i < num_users; i++) {
+                            sum += error[i][j] * U[i][k];
+                        }
+                        V_grad[j][k] = -2 * sum + 2 * reg_param * V[j][k];
+                    }
+                }
+                
+                // Atualizar U e V
+                for (let i = 0; i < num_users; i++) {
+                    for (let k = 0; k < num_factors; k++) {
+                        U[i][k] -= learning_rate * U_grad[i][k];
+                    }
+                }
+                
+                for (let j = 0; j < num_items; j++) {
+                    for (let k = 0; k < num_factors; k++) {
+                        V[j][k] -= learning_rate * V_grad[j][k];
+                    }
+                }
+            }
+            
+            return { U, V, errors };
+        }
+
+        // Função para renderizar o gráfico de convergência
+        function renderConvergencePlot(errors) {
+            const ctx = document.getElementById('convergencePlot').getContext('2d');
+            
+            if (window.convergenceChart) {
+                window.convergenceChart.destroy();
+            }
+            
+            window.convergenceChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: errors.map((_, i) => i + 1),
+                    datasets: [{
+                        label: 'Erro (RMSE)',
+                        data: errors,
+                        borderColor: '#4361ee',
+                        backgroundColor: 'rgba(67, 97, 238, 0.1)',
+                        borderWidth: 2,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'RMSE'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Epoch'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Função para mostrar as recomendações
+        function showRecommendations(userId, U, V) {
+            // Calcular todas as previsões
+            const num_users = U.length;
+            const num_items = V.length;
+            const R_pred = Array(num_users).fill().map(() => Array(num_items).fill(0));
+            
+            for (let i = 0; i < num_users; i++) {
+                for (let j = 0; j < num_items; j++) {
+                    for (let k = 0; k < num_factors; k++) {
+                        R_pred[i][j] += U[i][k] * V[j][k];
+                    }
+                }
+            }
+            
+            // Obter recomendações para o usuário selecionado
+            const userRatings = R_true[userId];
+            const recommendations = [];
+            
+            for (let j = 0; j < num_items; j++) {
+                if (userRatings[j] === 0) { // Apenas itens não avaliados
+                    recommendations.push({
+                        item: items[j],
+                        predicted_rating: R_pred[userId][j]
+                    });
+                }
+            }
+            
+            // Ordenar recomendações
+            recommendations.sort((a, b) => b.predicted_rating - a.predicted_rating);
+            
+            // Exibir recomendações
+            const recommendationsList = document.getElementById('recommendations-list');
+            recommendationsList.innerHTML = '';
+            
+            recommendations.forEach(rec => {
+                const stars = '★'.repeat(Math.round(rec.predicted_rating)) + 
+                             '☆'.repeat(5 - Math.round(rec.predicted_rating));
+                
+                const card = document.createElement('div');
+                card.className = 'recommendation-card';
+                card.innerHTML = `
+                    <h3>${rec.item}</h3>
+                    <p>Avaliação prevista: ${rec.predicted_rating.toFixed(2)}</p>
+                    <div class="stars">${stars}</div>
+                `;
+                
+                recommendationsList.appendChild(card);
+            });
+            
+            // Exibir fatores latentes
+            const factorsContainer = document.getElementById('factors-container');
+            factorsContainer.innerHTML = '';
+            
+            U[userId].forEach((factor, i) => {
+                const factorEl = document.createElement('div');
+                factorEl.className = 'factor';
+                factorEl.innerHTML = `
+                    <strong>Fator ${i + 1}</strong>
+                    <div class="factor-value">${factor.toFixed(4)}</div>
+                `;
+                factorsContainer.appendChild(factorEl);
+            });
+            
+            // Atualizar nome do usuário
+            document.getElementById('user-name').textContent = users[userId];
+            document.getElementById('factors-user-name').textContent = users[userId];
+            
+            // Mostrar view de resultados
+            document.getElementById('main-view').style.display = 'none';
+            document.getElementById('results-view').style.display = 'block';
+        }
+
+        // Event Listeners
+        document.getElementById('recommend-btn').addEventListener('click', function() {
+            const userId = parseInt(document.getElementById('user-select').value);
+            
+            // Mostrar loading
+            document.getElementById('main-view').style.display = 'none';
+            document.getElementById('loading').style.display = 'block';
+            
+            // Usar setTimeout para permitir que a UI atualize antes do cálculo pesado
+            setTimeout(() => {
+                // Treinar o modelo
+                const { U, V, errors } = trainModel(R_true, num_factors);
+                
+                // Renderizar gráfico
+                renderConvergencePlot(errors);
+                
+                // Mostrar resultados
+                showRecommendations(userId, U, V);
+                
+                // Esconder loading
+                document.getElementById('loading').style.display = 'none';
+            }, 100);
+        });
+
+        document.getElementById('back-btn').addEventListener('click', function(e) {
+            e.preventDefault();
+            document.getElementById('results-view').style.display = 'none';
+            document.getElementById('main-view').style.display = 'block';
+        });
+
+        // Inicialização
+        document.addEventListener('DOMContentLoaded', function() {
+            initRatingsTable();
+            initUserSelect();
+        });
+    </script>
 </body>
 </html>
